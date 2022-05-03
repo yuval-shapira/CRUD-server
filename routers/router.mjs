@@ -5,8 +5,7 @@ import { time } from "console";
 
 const router = express.Router();
 
-//let allUsersData;
-//-------- OK
+//Get all Users
 async function readUsersFile(req, res, next) {
   try {
     let allUsersData = await fs.readFile("./data/allUsers.json", "utf-8");
@@ -19,10 +18,10 @@ async function readUsersFile(req, res, next) {
 }
 router.use(readUsersFile);
 
+//Get log file
 async function readLogsFile(req, res, next) {
   try {
     let allLogsDataFile = await fs.readFile("./logs/http.log", "utf-8");
-    //allLogsDataFile = JSON.parse(allLogsDataFile);
     req.allLogsData = allLogsDataFile;
   } catch {
     log.yellow("No Data");
@@ -50,7 +49,6 @@ async function insertUserToFile(req, res, next) {
   try {
     await fs.writeFile("data/allUsers.json", req.userToInsert);
     log.green("File written successfully!");
-    log.blue(req.userToInsert);
     res.status(200).send(`User ${req.action} successfully!`);
   } catch (err) {
     log.red("Error writing the file: ", err.message);
@@ -75,86 +73,49 @@ router.post(
   insertUserToFile
 );
 
-//get 1 user by ID -----OK-----
+//get 1 user by ID
 router.get("/user/:id", writeToLogFile, (req, res) => {
   for (let user of req.users) {
     log.yellow(`user.id: ${user.id} && req.params.id: ${req.params.id}`);
     if (user.id === req.params.id) {
       log.yellow("Found the right user");
-
       return res.status(200).send(user);
     }
   }
   return res.status(200).send("user not found");
 });
 
-//get all users -----OK-----
+//get all users
 router.get("/user", writeToLogFile, (req, res) => {
   res.status(200).send(req.users);
 });
 
 //update (put & patch) user by ID
-router.put("/user_update_combine", async (req, res) => {
-  //const userData = req.body;
+router.put(
+  "/user_update_combine",
+  writeToLogFile,
+  (req, res) => {
+    for (let user of req.users) {
+      if (user.id === req.body.id) {
+        if ("first_name" in req.body) {
+          req.users[user].first_name = req.body.first_name;
+        }
+        if ("last_name" in req.body) {
+          req.users[user].last_name = req.body.last_name;
+        }
+        if ("email" in req.body) {
+          req.users[user].email = req.body.email;
+        }
+        if ("phone" in req.body) {
+          req.users[user].phone = req.body.phone;
+        }
+        req.action = "updated";
 
-  for (let user of req.users) {
-    if (user.id === req.body.id) {
-      if ("first_name" in req.body) {
-        req.users[user].first_name = req.body.first_name;
+        return res.status(200).send("File updated successfully!");
       }
-      if ("last_name" in req.body) {
-        req.users[user].last_name = req.body.last_name;
-      }
-      if ("email" in req.body) {
-        req.users[user].email = req.body.email;
-      }
-      if ("phone" in req.body) {
-        req.users[user].phone = req.body.phone;
-      }
-      req.action = "updated";
-      router.use(insertUserToFile);
-
-      req.method = "PUT";
-      req.urlPath = `/user_update/${req.body.id} `;
-      router.use(writeToLogFile);
-
-      return res.status(200).send("File updated successfully!");
     }
-  }
-});
+  },
+  insertUserToFile
+);
 
-//update (put & patch) user by ID
-router.put("/updateCombine", async (req, res) => {
-  //const userData = req.body;
-  const userToUpdate = req.query;
-
-  for (let user of req.users) {
-    if (user.id === userToUpdate.id) {
-      if (!"first_name" in userToUpdate) {
-        userToUpdate.first_name = user.first_name;
-      }
-      if (!"last_name" in userToUpdate) {
-        userToUpdate.last_name = user.last_name;
-      }
-      if (!"email" in userToUpdate) {
-        userToUpdate.email = user.email;
-      }
-      if (!"phone" in userToUpdate) {
-        userToUpdate.phone = user.phone;
-      }
-      // !userToUpdate.first_name? userToUpdate.first_name = user.first_name : null;
-      // !userToUpdate.last_name? userToUpdate.last_name = user.last_name : null;
-      // !userToUpdate.email? userToUpdate.email = user.email : null;
-      // !userToUpdate.phone? userToUpdate.phone = user.phone : null;
-      req.action = "updated";
-      router.use(insertUserToFile);
-
-      req.method = "PUT";
-      req.urlPath = `/api/updateCombine/${req.id}`;
-      router.use(writeToLogFile);
-
-      return res.status(200).send("File updated successfully!");
-    }
-  }
-});
 export default router;
