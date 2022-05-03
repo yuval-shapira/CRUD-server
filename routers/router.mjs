@@ -64,20 +64,13 @@ router.post(
   "/user",
   writeToLogFile,
   (req, res) => {
-    //let asd = req.body;
-    // req.userToInsert.id
-    let asd = {
-      id: Math.random()
-        .toString(36)
-        .replace(/[^a-z]+/g, "")
-        .substring(0, 5),
-    };
-    asd = req.body;
-    req.userToInsert = asd;
+    req.userToInsert = req.body;
+    req.userToInsert.id = Math.random()
+      .toString(36)
+      .replace(/[^a-z]+/g, "")
+      .substring(0, 5);
     req.action = "created";
     log.red(req.body);
-
-    //router.use(insertUserToFile);
   },
   insertUserToFile
 );
@@ -85,10 +78,14 @@ router.post(
 //get 1 user by ID -----OK-----
 router.get("/user/:id", writeToLogFile, (req, res) => {
   for (let user of req.users) {
+    log.yellow(`user.id: ${user.id} && req.params.id: ${req.params.id}`);
     if (user.id === req.params.id) {
+      log.yellow("Found the right user");
+
       return res.status(200).send(user);
     }
   }
+  return res.status(200).send("user not found");
 });
 
 //get all users -----OK-----
