@@ -46,8 +46,9 @@ async function writeToLogFile(req, res, next) {
 }
 
 async function insertUserToFile(req, res, next) {
+  req.users.push(req.userToInsert);
   try {
-    await fs.writeFile("data/allUsers.json", req.userToInsert);
+    await fs.writeFile("data/allUsers.json", req.users);
     log.green("File written successfully!");
     res.status(200).send(`User ${req.action} successfully!`);
   } catch (err) {
