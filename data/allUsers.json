@@ -1,16 +1,1 @@
-[
-  {
-    "first_name": "Bobbi",
-    "last_name": "Brown",
-    "email": "bob@brown.com",
-    "phone": "054-220-453",
-    "id": "wer"
-  },
-  {
-    "first_name": "Tzipi",
-    "last_name": "Shavit",
-    "email": "tzipi@shavit.com",
-    "phone": "052-250-467",
-    "id": "asd"
-  }
-]
+[{"first_name":"Bobbi","last_name":"Brown","email":"bob@brown.com","phone":"054-220-453","id":"yF5zhNAqBUOoRE7L0WCXc"},{"first_name":"Tzipi","last_name":"Shavit","email":"tzipi@shavit.com","phone":"052-250-467","id":"yF5zhjagdej7L0WCXc"}]

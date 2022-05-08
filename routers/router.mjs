@@ -1,9 +1,10 @@
 import express from "express";
 import fs from "fs/promises";
 import log from "@ajar/marker";
-import { time } from "console";
 
 const router = express.Router();
+
+router.use(express.json());
 
 //Get all Users
 async function readUsersFile(req, res, next) {
@@ -44,79 +45,81 @@ async function writeToLogFile(req, res, next) {
   }
   next();
 }
-
-async function insertUserToFile(req, res, next) {
-  req.users.push(req.userToInsert);
+//Write all users into JSON file
+async function writeUsersJsonFile(req, res) {
   try {
-    await fs.writeFile("data/allUsers.json", req.users);
+    await fs.writeFile("./data/allUsers.json", JSON.stringify(req.users));
     log.green("File written successfully!");
-    res.status(200).send(`User ${req.action} successfully!`);
+    return res.status(200).send(`User ${req.action} successfully!`);
   } catch (err) {
     log.red("Error writing the file: ", err.message);
-    res.status(200).send("Error writing the file");
+    return res.status(200).send("Error writing the file");
   }
-  next();
 }
+//Update user details function
+async function updateUserDetails(req, res) {
+  let i = 0;
+  for (let user of req.users) {
+    if (user.id === req.body.id) {
+      req.body.first_name
+        ? (req.users[i].first_name = req.body.first_name)
+        : null;
+      req.body.last_name ? (req.users[i].last_name = req.body.last_name) : null;
+      req.body.email ? (req.users[i].email = req.body.email) : null;
+      req.body.phone ? (req.users[i].phone = req.body.phone) : null;
 
+      req.action = "updated";
+      return writeUsersJsonFile(req, res);
+    }
+    i++;
+  }
+}
 //Create a new user
-router.post(
-  "/user",
-  writeToLogFile,
-  (req, res) => {
-    req.userToInsert = req.body;
-    req.userToInsert.id = Math.random()
-      .toString(36)
-      .replace(/[^a-z]+/g, "")
-      .substring(0, 5);
-    req.action = "created";
-    log.red(req.body);
-  },
-  insertUserToFile
-);
+router.post("/user/create", writeToLogFile, async (req, res) => {
+  req.userToInsert = req.body;
+  req.userToInsert.id = Math.random()
+    .toString(36)
+    .replace(/[^a-z]+/g, "")
+    .substring(0, 5);
+  req.action = "created";
+  req.users.push(req.userToInsert);
+  writeUsersJsonFile(req, res);
+});
 
 //get 1 user by ID
-router.get("/user/:id", writeToLogFile, (req, res) => {
+router.get("/user/:id", writeToLogFile, async (req, res) => {
   for (let user of req.users) {
-    log.yellow(`user.id: ${user.id} && req.params.id: ${req.params.id}`);
     if (user.id === req.params.id) {
-      log.yellow("Found the right user");
       return res.status(200).send(user);
     }
   }
-  return res.status(200).send("user not found");
+  return res.status(200).send("User not found");
 });
 
 //get all users
-router.get("/user", writeToLogFile, (req, res) => {
+router.get("/user", writeToLogFile, async (req, res) => {
+  router.use(writeToLogFile);
   res.status(200).send(req.users);
 });
 
-//update (put & patch) user by ID
-router.put(
-  "/user_update_combine",
-  writeToLogFile,
-  (req, res) => {
-    for (let user of req.users) {
-      if (user.id === req.body.id) {
-        if ("first_name" in req.body) {
-          req.users[user].first_name = req.body.first_name;
-        }
-        if ("last_name" in req.body) {
-          req.users[user].last_name = req.body.last_name;
-        }
-        if ("email" in req.body) {
-          req.users[user].email = req.body.email;
-        }
-        if ("phone" in req.body) {
-          req.users[user].phone = req.body.phone;
-        }
-        req.action = "updated";
+//update (patch) user by ID
+router.patch("/user/update", writeToLogFile, async (req, res) => {
+  return updateUserDetails(req, res);
+});
 
-        return res.status(200).send("File updated successfully!");
-      }
+//update (put) user by ID
+router.put("/user/update", writeToLogFile, async (req, res) => {
+  return updateUserDetails(req, res);
+});
+
+//delete user by ID
+router.delete("/user/delete", writeToLogFile, async (req, res) => {
+  for (let i = 0; i < req.users.length; i++) {
+    if (req.users[i].id === req.body.id) {
+      req.users.splice(i, 1);
+      req.action = "deleted";
+      return writeUsersJsonFile(req, res);
     }
-  },
-  insertUserToFile
-);
-
+  }
+});
 export default router;
